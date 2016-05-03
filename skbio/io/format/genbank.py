@@ -364,7 +364,9 @@ def _protein_to_genbank(obj, fh):
 def _construct(record, constructor=None, **kwargs):
     '''Construct the object of Sequence, DNA, RNA, or Protein.
     '''
-    seq, md, pmd = record
+    seq, md = record
+    # CMonk:
+    #seq, md, pmd = record
     if 'lowercase' not in kwargs:
         kwargs['lowercase'] = True
     if constructor is None:
@@ -380,7 +382,9 @@ def _construct(record, constructor=None, **kwargs):
             seq, metadata=md, positional_metadata=pmd, **kwargs).transcribe()
     else:
         return constructor(
-            seq, metadata=md, positional_metadata=pmd, **kwargs)
+            #CMonk:
+            seq, metadata=md, **kwargs)
+            #seq, metadata=md, positional_metadata=pmd, **kwargs)
 
 
 def _parse_genbanks(fh):
@@ -395,7 +399,8 @@ def _parse_genbanks(fh):
 
 def _parse_single_genbank(chunks):
     metadata = {}
-    positional_metadata = None
+    #CMonk:
+    #positional_metadata = None
     sequence = ''
     # each section starts with a HEADER without indent.
     section_splitter = _yield_section(
@@ -423,10 +428,14 @@ def _parse_single_genbank(chunks):
             sequence = parsed
         elif header == 'FEATURES':
             metadata[header] = parsed[0]
-            positional_metadata = pd.concat(parsed[1], axis=1)
+            #CMonk:
+            #positional_metadata = pd.concat(parsed[1], axis=1)
         else:
             metadata[header] = parsed
-    return sequence, metadata, positional_metadata
+
+    #CMonk:
+    return sequence, metadata
+    #return sequence, metadata, positional_metadata
 
 
 def _serialize_single_genbank(obj, fh):
@@ -599,7 +608,8 @@ def _parse_features(lines, length):
     '''Parse FEATURES field.
     '''
     features = []
-    positional_metadata = []
+    #CMonk:
+    #positional_metadata = []
     # skip the 1st FEATURES line
     if lines[0].startswith('FEATURES'):
         lines = lines[1:]
@@ -609,12 +619,19 @@ def _parse_features(lines, length):
     section_splitter = _yield_section(
         lambda x: not x.startswith(feature_indent),
         skip_blanks=True, strip=False)
+    import sys
     for i, section in enumerate(section_splitter(lines)):
+        print(i)
         # print(i) ; continue
-        feature, pmd = _parse_single_feature(section, length, i)
+        #CMonk
+        feature = _parse_single_feature(section, length, i)
+        #feature, pmd = _parse_single_feature(section, length, i)
         features.append(feature)
-        positional_metadata.append(pmd)
-    return features, positional_metadata
+        #CMonk: Memory Overflow
+        #positional_metadata.append(pmd)
+    #CMonk:
+    return features
+    #return features, positional_metadata
 
 
 def _serialize_features(header, obj, indent=21):
@@ -654,7 +671,9 @@ def _parse_single_feature(lines, length, index):
                 section, join_delimitor='', return_label=True)
             feature['type_'] = type
             feature['location'] = location
-            loc, loc_pmd = _parse_loc_str(location, length)
+            #CMonk:
+            loc = _parse_loc_str(location, length)
+            #loc, loc_pmd = _parse_loc_str(location, length)
             feature.update(loc)
         else:
             # following sections are Qualifiers
@@ -670,7 +689,9 @@ def _parse_single_feature(lines, length, index):
                 feature[k].append(v)
             else:
                 feature[k] = v
-    return feature, loc_pmd
+    #CMonk:
+    return feature
+    #return feature, loc_pmd
 
 
 def _serialize_single_feature(obj, indent=21):
@@ -724,7 +745,8 @@ def _parse_loc_str(loc_str, length):
     TODO:
     handle (b), (c), (e) cases correctly
     '''
-    pmd = np.zeros(length, dtype=bool)
+    #CMonk:
+    #pmd = np.zeros(length, dtype=bool)
     res = {'rc_': False,
            'left_partial_': False,
            'right_partial_': False}
@@ -759,9 +781,13 @@ def _parse_loc_str(loc_str, length):
             raise GenBankFormatError(
                 'Could not parse location string: "%s"' %
                 loc_str)
-        pmd[index] = True
+        #CMonk:
+        #pmd[index] = True
 
-    return res, pd.Series(pmd)
+
+    #CMonk:
+    return res
+    #return res, pd.Series(pmd)
 
 
 def _parse_origin(lines):
