@@ -407,14 +407,12 @@ def _parse_single_genbank(chunks):
         lambda x: not x[0].isspace(), strip=False)
     for section in section_splitter(chunks):
         header = section[0].split(None, 1)[0]
-        parser = _PARSER_TABLE.get(
-            header, _parse_section_default)
+        parser = _PARSER_TABLE.get(header, _parse_section_default)
 
         if header == 'FEATURES':
             # This requires 'LOCUS' line parsed before 'FEATURES', which should
             # be true and is implicitly checked by the sniffer.
-            parser = partial(
-                parser, length=metadata['LOCUS']['size'])
+            parser = partial(parser, length=metadata['LOCUS']['size'])
 
         parsed = parser(section)
 
@@ -427,8 +425,10 @@ def _parse_single_genbank(chunks):
         elif header == 'ORIGIN':
             sequence = parsed
         elif header == 'FEATURES':
-            metadata[header] = parsed[0]
-            #CMonk:
+            metadata[header] = parsed
+            # CMonk: removing positional metadata
+            #        and recording features through metadata
+            #metadata[header] = parsed[0]
             #positional_metadata = pd.concat(parsed[1], axis=1)
         else:
             metadata[header] = parsed
@@ -621,7 +621,7 @@ def _parse_features(lines, length):
         skip_blanks=True, strip=False)
     import sys
     for i, section in enumerate(section_splitter(lines)):
-        print(i)
+        #print(i)
         # print(i) ; continue
         #CMonk
         feature = _parse_single_feature(section, length, i)
