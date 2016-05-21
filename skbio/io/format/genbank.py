@@ -364,7 +364,7 @@ def _protein_to_genbank(obj, fh):
 def _construct(record, constructor=None, **kwargs):
     '''Construct the object of Sequence, DNA, RNA, or Protein.
     '''
-    seq, md, pmd = record
+    seq, md, pmd, feature = record
     if 'lowercase' not in kwargs:
         kwargs['lowercase'] = True
     if constructor is None:
@@ -396,6 +396,7 @@ def _parse_genbanks(fh):
 def _parse_single_genbank(chunks):
     metadata = {}
     positional_metadata = None
+    features = None
     sequence = ''
     # each section starts with a HEADER without indent.
     section_splitter = _yield_section(
@@ -408,6 +409,8 @@ def _parse_single_genbank(chunks):
         if header == 'FEATURES':
             # This requires 'LOCUS' line parsed before 'FEATURES', which should
             # be true and is implicitly checked by the sniffer.
+            # TODO Keep for now as may want to generate a sparse matrix
+            # TODO linking position to Feature objects
             parser = partial(
                 parser, length=metadata['LOCUS']['size'])
 
@@ -422,11 +425,10 @@ def _parse_single_genbank(chunks):
         elif header == 'ORIGIN':
             sequence = parsed
         elif header == 'FEATURES':
-            metadata[header] = parsed[0]
-            positional_metadata = pd.concat(parsed[1], axis=1)
+            features = parsed
         else:
             metadata[header] = parsed
-    return sequence, metadata, positional_metadata
+    return sequence, metadata, positional_metadata, features
 
 
 def _serialize_single_genbank(obj, fh):
@@ -599,6 +601,8 @@ def _parse_features(lines, length):
     '''Parse FEATURES field.
     '''
     features = []
+    #TODO build sparse poistion matrix at this level after parsing single feature
+    #TODO by processing location
     positional_metadata = []
     # skip the 1st FEATURES line
     if lines[0].startswith('FEATURES'):
@@ -864,6 +868,9 @@ def _yield_section(is_another_section, **kwargs):
             yield curr
     return parser
 
+def _validate_qualifier_default(value):
+    # TODO validate qualifiers against genbank feature table specification
+    return True
 
 _PARSER_TABLE = {
     'LOCUS': _parse_locus,
@@ -878,3 +885,14 @@ _SERIALIZER_TABLE = {
     'SOURCE': _serialize_source,
     'REFERENCE': _serialize_reference,
     'FEATURES': _serialize_features}
+
+
+# TODO: dictionaries of feature and qualifier key works mapped to methods
+# TODO: for parsing and validating/correction
+_FEATURE_TABLE = {
+    'KEY': _parse_single_feature
+}
+
+_QUALIFIER_TABLE = {
+    'KEY': _validate_qualifier_default
+}
