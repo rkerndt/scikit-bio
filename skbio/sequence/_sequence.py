@@ -533,9 +533,9 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
     def _positional_metadata_axis_len_(self):
         return len(self)
 
-    @stable(as_of="0.4.0")
+    @experimental(as_of="0.4.2")
     def __init__(self, sequence, metadata=None, positional_metadata=None,
-                 lowercase=False):
+                 features=None, lowercase=False):
         if isinstance(sequence, np.ndarray):
             if sequence.dtype == np.uint8:
                 self._set_bytes_contiguous(sequence)
@@ -586,6 +586,11 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         MetadataMixin._init_(self, metadata=metadata)
         PositionalMetadataMixin._init_(
             self, positional_metadata=positional_metadata)
+
+        # only create this attribute if constructing from genbank file
+        # to avoid conflicts with existing skbio code
+        if features is not None:
+            self.features = features
 
         if lowercase is False:
             pass

@@ -268,7 +268,7 @@ from skbio.io.format._base import (
     _get_nth_sequence, _line_generator, _too_many_blanks)
 from skbio.util._misc import chunk_str
 from skbio.sequence import Sequence, DNA, RNA, Protein
-
+from skbio.metadata._feature import Feature
 
 genbank = create_format('genbank')
 
@@ -364,7 +364,7 @@ def _protein_to_genbank(obj, fh):
 def _construct(record, constructor=None, **kwargs):
     '''Construct the object of Sequence, DNA, RNA, or Protein.
     '''
-    seq, md, pmd, feature = record
+    seq, md, pmd, frs = record
     if 'lowercase' not in kwargs:
         kwargs['lowercase'] = True
     if constructor is None:
@@ -377,10 +377,10 @@ def _construct(record, constructor=None, **kwargs):
 
     if constructor == RNA:
         return DNA(
-            seq, metadata=md, positional_metadata=pmd, **kwargs).transcribe()
+            seq, metadata=md, positional_metadata=pmd, features=frs, **kwargs).transcribe()
     else:
         return constructor(
-            seq, metadata=md, positional_metadata=pmd, **kwargs)
+            seq, metadata=md, positional_metadata=pmd, features=frs,  **kwargs)
 
 
 def _parse_genbanks(fh):
@@ -603,7 +603,7 @@ def _parse_features(lines, length):
     features = []
     #TODO build sparse poistion matrix at this level after parsing single feature
     #TODO by processing location
-    positional_metadata = []
+    #positional_metadata = []
     # skip the 1st FEATURES line
     if lines[0].startswith('FEATURES'):
         lines = lines[1:]
@@ -613,12 +613,12 @@ def _parse_features(lines, length):
     section_splitter = _yield_section(
         lambda x: not x.startswith(feature_indent),
         skip_blanks=True, strip=False)
-    for i, section in enumerate(section_splitter(lines)):
+    for section in section_splitter(lines):
         # print(i) ; continue
-        feature, pmd = _parse_single_feature(section, length, i)
+        feature = _parse_single_feature(section, length)
         features.append(feature)
-        positional_metadata.append(pmd)
-    return features, positional_metadata
+        #positional_metadata.append(pmd)
+    return features
 
 
 def _serialize_features(header, obj, indent=21):
@@ -633,7 +633,7 @@ def _serialize_features(header, obj, indent=21):
             yield _serialize_single_feature(feature, indent)
 
 
-def _parse_single_feature(lines, length, index):
+def _parse_single_feature(lines, length):
     '''Parse a feature.
 
     Returns
@@ -643,8 +643,8 @@ def _parse_single_feature(lines, length, index):
         `positional_metadata` for the feature.
 
     '''
-    feature = {}
-    feature['index_'] = index
+    feature = None
+    qualifiers = {}
     # each component of a feature starts with '/', except the 1st
     # component of location.
     section_splitter = _yield_section(
@@ -656,10 +656,14 @@ def _parse_single_feature(lines, length, index):
             first = False
             type, location = _parse_section_default(
                 section, join_delimitor='', return_label=True)
-            feature['type_'] = type
-            feature['location'] = location
-            loc, loc_pmd = _parse_loc_str(location, length)
-            feature.update(loc)
+            feature = Feature(type, location)
+            loc = _parse_loc_str(location, length)
+            feature.rc_ = loc['rc_']
+            feature.left_partial_ = loc['left_partial_']
+            feature.right_partial = loc['right_partial_']
+            feature.begin = loc['beg_']
+            feature.end = loc['end_']
+
         else:
             # following sections are Qualifiers
             k, v = _parse_section_default(
@@ -668,13 +672,16 @@ def _parse_single_feature(lines, length, index):
             k = k[1:]
 
             # some Qualifiers can appear multiple times
-            if k in feature:
-                if not isinstance(feature[k], list):
-                    feature[k] = [feature[k]]
-                feature[k].append(v)
+            if k in qualifiers:
+                if not isinstance(qualifiers[k], list):
+                    qualifiers[k] = [qualifiers[k]]
+                qualifiers[k].append(v)
             else:
-                feature[k] = v
-    return feature, loc_pmd
+                qualifiers[k] = v
+
+    feature.qualifiers = qualifiers
+
+    return feature
 
 
 def _serialize_single_feature(obj, indent=21):
@@ -727,8 +734,12 @@ def _parse_loc_str(loc_str, length):
 
     TODO:
     handle (b), (c), (e) cases correctly
+
+    Not creating pandas Series, leave index[] functionality in for
+    future use of a sparse matrix to map sequence position to
+    feature
     '''
-    pmd = np.zeros(length, dtype=bool)
+    #pmd = np.zeros(length, dtype=bool)
     res = {'rc_': False,
            'left_partial_': False,
            'right_partial_': False}
@@ -752,6 +763,8 @@ def _parse_loc_str(loc_str, length):
                 res['right_partial_'] = True
             beg = int(beg)
             end = int(end)
+            res['beg_'] = beg
+            res['end_'] = end
             index = range(beg-1, end)
         elif '.' in i:  # (c)
             index = []
@@ -763,9 +776,9 @@ def _parse_loc_str(loc_str, length):
             raise GenBankFormatError(
                 'Could not parse location string: "%s"' %
                 loc_str)
-        pmd[index] = True
+        #pmd[index] = True
 
-    return res, pd.Series(pmd)
+    return res
 
 
 def _parse_origin(lines):

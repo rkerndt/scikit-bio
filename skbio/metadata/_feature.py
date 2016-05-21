@@ -11,7 +11,7 @@ class Feature(SkbioObject):
     """
 
     @experimental(as_of="0.4.2")
-    def __init__(self, type, location, classifiers):
+    def __init__(self, type, location, qualifiers = None):
         self.type_ = type
 
         # original location string is kept as well as parsed into
@@ -22,7 +22,7 @@ class Feature(SkbioObject):
         self.right_partial_ = False
         self.begin = 0
         self.end = 0
-        self.classifiers = classifiers
+        self.qualifiers = qualifiers
 
 
     @experimental(as_of="0.4.2")
