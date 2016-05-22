@@ -587,9 +587,25 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         PositionalMetadataMixin._init_(
             self, positional_metadata=positional_metadata)
 
-        # only create this attribute if constructing from genbank file
-        # to avoid conflicts with existing skbio code
+        # raise an exception if this is not a list of Feature objects
+        self.features = None
         if features is not None:
+            valid_feature_type = True
+            type_err_msg = ''
+            if isinstance(features, list):
+                # test just the first
+                if isinstance(features[0], skbio.metadata._feature.Feature):
+                    self.features = features
+                else:
+                    valid_feature_type = False
+                    type_err_msg = repr(type(features[0]))
+            else:
+                valid_feature_type = False
+                type_err_msg = repr(type(features))
+
+            if not valid_feature_type:
+                raise TypeError("Can not create features with %s" %
+                                type_err_msg)
             self.features = features
 
         if lowercase is False:
