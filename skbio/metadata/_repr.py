@@ -71,18 +71,24 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
         This can generate an enormous amount of output. Another option would be to
         output the feature 'types' and number found in this sequence rather than all the
         details.
+        TODO:
+        Hack to check for attribute given objects other than Sequence will inherit metadata
+        need to find a better check or embed features as part or metadata rather than Sequence.
         """
-        if self._obj.features:
-            self._lines.add_lines(self._format_feature_key_value('Features', 'Location/Qualifiers', 1))
-            for feature in self._obj.features:
-                self._lines.add_lines(self._format_feature_key_value(feature.type_, feature.location, 2))
-                for key in sorted(feature.qualifiers):
-                    value = feature.qualifiers[key]
-                    if isinstance(value, list):
-                        for v in value:
-                            self._lines.add_lines(self._format_feature_key_value(key, v, 3))
-                    else:
-                        self._lines.add_lines(self._format_feature_key_value(key, value, 3))
+        try:
+            if self._obj.features:
+                self._lines.add_lines(self._format_feature_key_value('Features', 'Location/Qualifiers', 1))
+                for feature in self._obj.features:
+                    self._lines.add_lines(self._format_feature_key_value(feature.type_, feature.location, 2))
+                    for key in sorted(feature.qualifiers):
+                        value = feature.qualifiers[key]
+                        if isinstance(value, list):
+                            for v in value:
+                                self._lines.add_lines(self._format_feature_key_value(key, v, 3))
+                        else:
+                            self._lines.add_lines(self._format_feature_key_value(key, value, 3))
+        except AttributeError:
+            pass
 
     def _sorted_keys_grouped_by_type(self, dict_):
         """Group keys within a dict by their type and sort within type."""
