@@ -24,7 +24,6 @@ class Feature(SkbioObject):
         self.end = 0
         self.qualifiers = qualifiers
 
-
     @experimental(as_of="0.4.2")
     def __str__(self):
         # TODO: string output for debugging/stdout display

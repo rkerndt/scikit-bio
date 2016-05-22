@@ -48,6 +48,7 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
         self._process_header()
         self._process_metadata()
         self._process_positional_metadata()
+        self._process_features()
         self._process_stats()
         self._process_data()
 
@@ -63,6 +64,25 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
                 value = self._obj.metadata[key]
                 self._lines.add_lines(
                     self._format_metadata_key_value(key, value))
+
+    def _process_features(self):
+        """
+        TODO:
+        This can generate an enormous amount of output. Another option would be to
+        output the feature 'types' and number found in this sequence rather than all the
+        details.
+        """
+        if self._obj.features:
+            self._lines.add_lines(self._format_feature_key_value('Features', 'Location/Qualifiers', 1))
+            for feature in self._obj.features:
+                self._lines.add_lines(self._format_feature_key_value(feature.type_, feature.location, 2))
+                for key in sorted(feature.qualifiers):
+                    value = feature.qualifiers[key]
+                    if isinstance(value, list):
+                        for v in value:
+                            self._lines.add_lines(self._format_feature_key_value(key, v, 3))
+                    else:
+                        self._lines.add_lines(self._format_feature_key_value(key, value, 3))
 
     def _sorted_keys_grouped_by_type(self, dict_):
         """Group keys within a dict by their type and sort within type."""
@@ -108,6 +128,26 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
             #     'foo': <type
             #             'dict'>
             extra_indent = 1
+
+        return self._wrap_text_with_indent(value_repr, key_fmt, extra_indent)
+
+    def _format_feature_key_value(self, key, value, indent=1):
+        """Format feature type, location, and qualifiers, wrapping across lines if
+           necessary. only expecting strings as key and value types
+        """
+        key_fmt = (self._indent * indent) + str(key)
+
+        if isinstance(value, str):
+            value_repr = str(value)
+            extra_indent = 1
+        else:
+            value_repr = repr(value)
+            extra_indent = 0
+
+        if indent == 3:
+            key_fmt += '='
+        elif indent == 2:
+            value_repr = self._indent + value_repr
 
         return self._wrap_text_with_indent(value_repr, key_fmt, extra_indent)
 
