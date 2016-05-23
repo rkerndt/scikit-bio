@@ -425,10 +425,10 @@ def _parse_single_genbank(chunks):
         elif header == 'ORIGIN':
             sequence = parsed
         elif header == 'FEATURES':
-            features, index_features, positional_features = parsed
+            features, index_feature_types, positional_features = parsed
         else:
             metadata[header] = parsed
-    return sequence, metadata, positional_metadata, features
+    return sequence, metadata, positional_metadata, features, index_feature_types, positional_features
 
 
 def _serialize_single_genbank(obj, fh):
@@ -599,13 +599,21 @@ def _serialize_source(header, obj, indent=12):
 
 def _parse_features(lines, length):
     '''Parse FEATURES field.
+    Three components to features metadata:
+    features := list of Feature obj
+    index_features := dictionary of Feature: ordinal (position in features)
+    positional_features := sparse matrix of sequence position by feature type
+        value is ordinal of feature within features list
+
+    TODO: want to have the matrix hold the Feature object directly (reference to it)
+    but have not found a sparse matrix implementation that works on python objects
     '''
     num_types = 19
     features = []
-    np_feature_type = np.dtype(Feature)
+    feature_type_count = 0
     feature_count = 0
-    index_features = {}
-    positional_features = sparse.lil_matrix((length, num_types), dtype=np_feature_type)
+    index_feature_types = {}
+    positional_features = sparse.lil_matrix((length, num_types), dtype=np.uint32)
     # skip the 1st FEATURES line
     if lines[0].startswith('FEATURES'):
         lines = lines[1:]
@@ -619,18 +627,19 @@ def _parse_features(lines, length):
         # print(i) ; continue
         feature, index = _parse_single_feature(section, length)
         features.append(feature)
-        if feature.type_ not in index_features:
-            index_features[feature.type_] = feature_count
-            feature_count += 1
+        if feature.type_ not in index_feature_types:
+            index_feature_types[feature.type_] = feature_type_count
+            feature_type_count += 1
             # check sparse table shape
             nrows, ncols = positional_features.get_shape()
-            if feature_count > ncols:
+            if feature_type_count > ncols:
                 positional_features.reshape((nrows, 2 * ncols))
-        fidx = index_features[feature.type_]
+        fidx = index_feature_types[feature.type_]
         for i in index:
-            positional_features[i,fidx] = feature
+            positional_features[i,fidx] = feature_count
+        feature_count += 1
 
-    return features, index_features, positional_features
+    return features, index_feature_types, positional_features
 
 
 def _serialize_features(header, obj, indent=21):

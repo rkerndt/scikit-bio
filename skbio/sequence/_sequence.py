@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
-
+from scipy import sparse
 import skbio.sequence.distance
 from skbio._base import SkbioObject
 from skbio.metadata._mixin import MetadataMixin, PositionalMetadataMixin
@@ -535,7 +535,8 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
 
     @experimental(as_of="0.4.2")
     def __init__(self, sequence, metadata=None, positional_metadata=None,
-                 features=None, lowercase=False):
+                 features=None, index_feature_types=None, positional_featues=None,
+                 lowercase=False):
         if isinstance(sequence, np.ndarray):
             if sequence.dtype == np.uint8:
                 self._set_bytes_contiguous(sequence)
@@ -589,6 +590,8 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
 
         # raise an exception if this is not a list of Feature objects
         self.features = None
+        self.index_feature_types = None
+        self.positional_features = None
         if features is not None:
             valid_feature_type = True
             type_err_msg = ''
@@ -602,7 +605,15 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             else:
                 valid_feature_type = False
                 type_err_msg = repr(type(features))
-
+            if isinstance(index_feature_types, list) and index_feature_types:
+                self.index_feature_types = self.index_feature_types
+            else:
+                valid_feature_type = False
+                type_err_msg += ', ' + repr(type(index_feature_types))
+            if isinstance(positional_featues, sparse.lil_matrix):
+                self.positional_features = positional_featues
+            else:
+                type_err_msg += ', ' + repr(type(positional_featues))
             if not valid_feature_type:
                 raise TypeError("Can not create features with %s" %
                                 type_err_msg)
