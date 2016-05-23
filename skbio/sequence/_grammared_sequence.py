@@ -327,10 +327,12 @@ class GrammaredSequence(Sequence, metaclass=GrammaredSequenceMeta):
             return _motifs
 
     @overrides(Sequence)
-    def __init__(self, sequence, metadata=None, positional_metadata=None, features=None,
+    def __init__(self, sequence, metadata=None, positional_metadata=None,
+                 features=None, index_feature_types=None, positional_features=None,
                  lowercase=False, validate=True):
         super(GrammaredSequence, self).__init__(
-            sequence, metadata, positional_metadata, features, lowercase)
+            sequence, metadata, positional_metadata, features,
+            index_feature_types, positional_features, lowercase)
 
         if validate:
             self._validate()

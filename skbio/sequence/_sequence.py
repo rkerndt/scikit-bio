@@ -535,7 +535,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
 
     @experimental(as_of="0.4.2")
     def __init__(self, sequence, metadata=None, positional_metadata=None,
-                 features=None, index_feature_types=None, positional_featues=None,
+                 features=None, index_feature_types=None, positional_features=None,
                  lowercase=False):
         if isinstance(sequence, np.ndarray):
             if sequence.dtype == np.uint8:
@@ -610,10 +610,10 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             else:
                 valid_feature_type = False
                 type_err_msg += ', ' + repr(type(index_feature_types))
-            if isinstance(positional_featues, sparse.lil_matrix):
-                self.positional_features = positional_featues
+            if isinstance(positional_features, sparse.lil_matrix):
+                self.positional_features = positional_features
             else:
-                type_err_msg += ', ' + repr(type(positional_featues))
+                type_err_msg += ', ' + repr(type(positional_features))
             if not valid_feature_type:
                 raise TypeError("Can not create features with %s" %
                                 type_err_msg)

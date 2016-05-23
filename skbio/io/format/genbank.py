@@ -364,7 +364,7 @@ def _protein_to_genbank(obj, fh):
 def _construct(record, constructor=None, **kwargs):
     '''Construct the object of Sequence, DNA, RNA, or Protein.
     '''
-    seq, md, pmd, frs = record
+    seq, md, pmd, frs, fidx, pfrs = record
     if 'lowercase' not in kwargs:
         kwargs['lowercase'] = True
     if constructor is None:
@@ -377,10 +377,12 @@ def _construct(record, constructor=None, **kwargs):
 
     if constructor == RNA:
         return DNA(
-            seq, metadata=md, positional_metadata=pmd, features=frs, **kwargs).transcribe()
+            seq, metadata=md, positional_metadata=pmd, features=frs,
+            index_feature_types=fidx, positional_features=pfrs, **kwargs).transcribe()
     else:
         return constructor(
-            seq, metadata=md, positional_metadata=pmd, features=frs,  **kwargs)
+            seq, metadata=md, positional_metadata=pmd, features=frs,
+            index_feature_types=fidx, positional_features=pfrs, **kwargs)
 
 
 def _parse_genbanks(fh):
