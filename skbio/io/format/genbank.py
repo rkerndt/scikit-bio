@@ -260,7 +260,7 @@ References
 
 import re
 import numpy as np
-import pandas as pd
+from scipy import sparse
 from functools import partial
 
 from skbio.io import create_format, GenBankFormatError
@@ -425,7 +425,7 @@ def _parse_single_genbank(chunks):
         elif header == 'ORIGIN':
             sequence = parsed
         elif header == 'FEATURES':
-            features = parsed
+            features, index_features, positional_features = parsed
         else:
             metadata[header] = parsed
     return sequence, metadata, positional_metadata, features
@@ -600,10 +600,12 @@ def _serialize_source(header, obj, indent=12):
 def _parse_features(lines, length):
     '''Parse FEATURES field.
     '''
+    num_types = 19
     features = []
-    #TODO build sparse poistion matrix at this level after parsing single feature
-    #TODO by processing location
-    #positional_metadata = []
+    np_feature_type = np.dtype(Feature)
+    feature_count = 0
+    index_features = {}
+    positional_features = sparse.lil_matrix((length, num_types), dtype=np_feature_type)
     # skip the 1st FEATURES line
     if lines[0].startswith('FEATURES'):
         lines = lines[1:]
@@ -615,10 +617,20 @@ def _parse_features(lines, length):
         skip_blanks=True, strip=False)
     for section in section_splitter(lines):
         # print(i) ; continue
-        feature = _parse_single_feature(section, length)
+        feature, index = _parse_single_feature(section, length)
         features.append(feature)
-        #positional_metadata.append(pmd)
-    return features
+        if feature.type_ not in index_features:
+            index_features[feature.type_] = feature_count
+            feature_count += 1
+            # check sparse table shape
+            nrows, ncols = positional_features.get_shape()
+            if feature_count > ncols:
+                positional_features.reshape((nrows, 2 * ncols))
+        fidx = index_features[feature.type_]
+        for i in index:
+            positional_features[i,fidx] = feature
+
+    return features, index_features, positional_features
 
 
 def _serialize_features(header, obj, indent=21):
@@ -657,7 +669,7 @@ def _parse_single_feature(lines, length):
             type, location = _parse_section_default(
                 section, join_delimitor='', return_label=True)
             feature = Feature(type, location)
-            loc = _parse_loc_str(location, length)
+            loc, index = _parse_loc_str(location, length)
             feature.rc_ = loc['rc_']
             feature.left_partial_ = loc['left_partial_']
             feature.right_partial = loc['right_partial_']
@@ -681,7 +693,7 @@ def _parse_single_feature(lines, length):
 
     feature.qualifiers = qualifiers
 
-    return feature
+    return feature, index
 
 
 def _serialize_single_feature(obj, indent=21):
@@ -735,11 +747,10 @@ def _parse_loc_str(loc_str, length):
     TODO:
     handle (b), (c), (e) cases correctly
 
-    Not creating pandas Series, leave index[] functionality in for
-    future use of a sparse matrix to map sequence position to
-    feature
+    Returns the index list of sequence position associated with
+    this feature
     '''
-    #pmd = np.zeros(length, dtype=bool)
+
     res = {'rc_': False,
            'left_partial_': False,
            'right_partial_': False}
@@ -776,9 +787,8 @@ def _parse_loc_str(loc_str, length):
             raise GenBankFormatError(
                 'Could not parse location string: "%s"' %
                 loc_str)
-        #pmd[index] = True
 
-    return res
+    return res, index
 
 
 def _parse_origin(lines):
