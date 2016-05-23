@@ -605,7 +605,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             else:
                 valid_feature_type = False
                 type_err_msg = repr(type(features))
-            if isinstance(index_feature_types, list) and index_feature_types:
+            if isinstance(index_feature_types, dict) and index_feature_types:
                 self.index_feature_types = self.index_feature_types
             else:
                 valid_feature_type = False
