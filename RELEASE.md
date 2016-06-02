@@ -82,7 +82,7 @@ Assuming the GitHub release tarball correctly installs and passes its tests, you
 
 2. Build a source distribution:
 
-        python setup.py sdist
+        python setup.py build_ext --inplace sdist
 
 3. Create a new virtualenv and run:
 
