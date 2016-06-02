@@ -430,7 +430,6 @@ def _parse_single_genbank(chunks):
             sequence = parsed
         elif header == 'FEATURES':
             features, index_feature_types, positional_features = parsed
-            metadata[header] = features
         else:
             metadata[header] = parsed
     return sequence, metadata, positional_metadata, features, index_feature_types, positional_features
@@ -641,9 +640,6 @@ def _parse_features(lines, length):
                 positional_features.reshape((nrows, 2 * ncols))
         fidx = index_feature_types[feature.type_]
         positional_features[index, fidx] = feature_count
-        # for i in index:
-        #     positional_features[i,fidx] = feature_count
-        #print feature_count
         feature_count += 1
 
 
