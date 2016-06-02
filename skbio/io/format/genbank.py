@@ -399,6 +399,8 @@ def _parse_single_genbank(chunks):
     metadata = {}
     positional_metadata = None
     features = None
+    index_feature_types = None
+    positional_features = None
     sequence = ''
     # each section starts with a HEADER without indent.
     section_splitter = _yield_section(
