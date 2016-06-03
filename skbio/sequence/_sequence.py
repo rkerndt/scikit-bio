@@ -915,7 +915,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                 indexable = np.array(positions, dtype=np.int64)
             else:
                 raise IndexError("Feature not present in sequence")
-            
+
         if isinstance(indexable, np.ndarray) and indexable.size == 0:
             # convert an empty ndarray to a supported dtype for slicing a numpy
             # array
@@ -923,8 +923,14 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
 
         seq = self._bytes[indexable]
         positional_metadata = self._slice_positional_metadata(indexable)
+
         if self.positional_features is not None:
-            positional_features = sparse.vstack(self._row_positional_features(indexable))
+            if isinstance(indexable, np.ndarray):
+                positional_features = sparse.vstack(self._row_positional_features(indexable))
+            elif isinstance(indexable, slice) or isinstance(indexable, int):
+                positional_features = self.positional_features[indexable]
+            else:
+                raise IndexError("Type %s not supported as index" % repr(type(indexable)))
         else:
             positional_features = None
 
@@ -933,7 +939,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             metadata=self.metadata,
             positional_metadata=positional_metadata,
             features=self.features,
-            index_feature_type=self.index_feature_types,
+            index_feature_types=self.index_feature_types,
             positional_features=positional_features)
 
     def _pos_from_feature(self, feature):
@@ -954,8 +960,6 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         else:
             index = indexable
         return self.positional_metadata.iloc[index]
-
-    def _slice_positional_features(self, indexable):
 
 
     @stable(as_of="0.4.0")
