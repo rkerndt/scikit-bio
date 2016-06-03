@@ -913,7 +913,9 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             if self.features is not None and indexable in self.features:
                 positions = list(self._pos_from_feature(indexable))
                 indexable = np.array(positions, dtype=np.int64)
-
+            else:
+                raise IndexError("Feature not present in sequence")
+            
         if isinstance(indexable, np.ndarray) and indexable.size == 0:
             # convert an empty ndarray to a supported dtype for slicing a numpy
             # array
