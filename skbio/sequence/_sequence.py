@@ -886,15 +886,16 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                     if self.positional_features is not None:
                         pos_feature_slices = list(_slices_from_iter(self.positional_features, index))
                         positional_features = sparse.vstack(pos_feature_slices)
-                        # TODO: prune features not kept with slices
+                        features = self._purge_features()
                     else:
                         positional_features = None
+                        features = None
 
                     return self._constructor(
                         sequence=seq,
                         metadata=self.metadata,
                         positional_metadata=positional_metadata,
-                        features=self.features,
+                        features=features,
                         index_feature_types=self.index_feature_types,
                         positional_features=positional_features)
         elif (isinstance(indexable, str) or
@@ -931,14 +932,16 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                 positional_features = self.positional_features[indexable]
             else:
                 raise IndexError("Type %s not supported as index" % repr(type(indexable)))
+            features = self._purge_features()
         else:
             positional_features = None
+            features = None
 
         return self._constructor(
             sequence=seq,
             metadata=self.metadata,
             positional_metadata=positional_metadata,
-            features=self.features,
+            features=features,
             index_feature_types=self.index_feature_types,
             positional_features=positional_features)
 
@@ -961,6 +964,32 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             index = indexable
         return self.positional_metadata.iloc[index]
 
+    def _purge_features(self):
+        """
+        Purges features, index_feature_types to match what remains in positional_features
+        """
+        # this is not going to be very efficent, basically regenerate list from
+        # what is in positional_features but also need to update index used in matrix
+
+        features = [None]
+        nidx = -1
+        pidx = -1
+        rows, cols = self.positional_features.get_shape()
+        for row in range(rows):
+            for col in range(cols):
+                fidx = self.positional_features[row,col]
+                if fidx > 0:
+                    if fidx != pidx:
+                        pidx = fidx
+                        if self.features[fidx] not in features:
+                            # we have an unseen feature
+                            features.append(self.features[fidx])
+                            nidx = len(features) - 1
+                        else:
+                            nidx = features.index(self.features[fidx])
+                    self.positional_features[row,col] = nidx
+
+        return features
 
     @stable(as_of="0.4.0")
     def __len__(self):

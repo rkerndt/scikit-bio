@@ -613,9 +613,9 @@ def _parse_features(lines, length):
     but have not found a sparse matrix implementation that works on python objects
     '''
     num_types = 19
-    features = []
+    features = [None]
     feature_type_count = 0
-    feature_count = 0
+    feature_count = 1
     index_feature_types = {}
     positional_features = sparse.lil_matrix((length, num_types), dtype=np.uint32)
     # skip the 1st FEATURES line
