@@ -17,6 +17,7 @@ from scipy import sparse
 import skbio.sequence.distance
 from skbio._base import SkbioObject
 from skbio.metadata._mixin import MetadataMixin, PositionalMetadataMixin
+from skbio.metadata._feature import Feature
 from skbio.sequence._repr import _SequenceReprBuilder
 from skbio.util._decorator import (stable, experimental, deprecated,
                                    classonlymethod, overrides)
@@ -597,7 +598,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             type_err_msg = ''
             if isinstance(features, list):
                 # test just the first
-                if isinstance(features[0], skbio.metadata._feature.Feature):
+                if isinstance(features[0], Feature):
                     self.features = features
                 else:
                     valid_feature_type = False
@@ -606,7 +607,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                 valid_feature_type = False
                 type_err_msg = repr(type(features))
             if isinstance(index_feature_types, dict) and index_feature_types:
-                self.index_feature_types = self.index_feature_types
+                self.index_feature_types = index_feature_types
             else:
                 valid_feature_type = False
                 type_err_msg += ', ' + repr(type(index_feature_types))
@@ -882,11 +883,20 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                     pos_md_slices = list(_slices_from_iter(
                                          self.positional_metadata, index))
                     positional_metadata = pd.concat(pos_md_slices)
+                    if self.positional_features is not None:
+                        pos_feature_slices = list(_slices_from_iter(self.positional_features, index))
+                        positional_features = sparse.vstack(pos_feature_slices)
+                        # TODO: prune features not kept with slices
+                    else:
+                        positional_features = None
 
                     return self._constructor(
                         sequence=seq,
                         metadata=self.metadata,
-                        positional_metadata=positional_metadata)
+                        positional_metadata=positional_metadata,
+                        features=self.features,
+                        index_feature_types=self.index_feature_types,
+                        positional_features=positional_features)
         elif (isinstance(indexable, str) or
                 isinstance(indexable, bool)):
             raise IndexError("Cannot index with %s type: %r" %
@@ -899,6 +909,11 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                              " as the sequence (%d, not %d)." %
                              (len(self), len(indexable)))
 
+        if isinstance(indexable, Feature):
+            if self.features is not None and indexable in self.features:
+                positions = list(self._pos_from_feature(indexable))
+                indexable = np.array(positions, dtype=np.int64)
+
         if isinstance(indexable, np.ndarray) and indexable.size == 0:
             # convert an empty ndarray to a supported dtype for slicing a numpy
             # array
@@ -906,11 +921,30 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
 
         seq = self._bytes[indexable]
         positional_metadata = self._slice_positional_metadata(indexable)
+        if self.positional_features is not None:
+            positional_features = sparse.vstack(self._row_positional_features(indexable))
+        else:
+            positional_features = None
 
         return self._constructor(
             sequence=seq,
             metadata=self.metadata,
-            positional_metadata=positional_metadata)
+            positional_metadata=positional_metadata,
+            features=self.features,
+            index_feature_type=self.index_feature_types,
+            positional_features=positional_features)
+
+    def _pos_from_feature(self, feature):
+        fidx = self.features.index(feature)
+        fcol = self.index_feature_types[feature.type_]
+        rows, _ = self.positional_features.get_shape()
+        for frow in range(rows):
+            if self.positional_features[frow][fcol] == fidx:
+                yield fidx
+
+    def _row_positional_features(self, positions):
+        for row in positions:
+            yield self.positional_features[row]
 
     def _slice_positional_metadata(self, indexable):
         if _is_single_index(indexable):
@@ -918,6 +952,9 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         else:
             index = indexable
         return self.positional_metadata.iloc[index]
+
+    def _slice_positional_features(self, indexable):
+
 
     @stable(as_of="0.4.0")
     def __len__(self):

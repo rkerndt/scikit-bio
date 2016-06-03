@@ -44,12 +44,15 @@ class Feature(SkbioObject):
                 lines.add_line(fq0(key, value))
         return lines.to_str()
 
+    @experimental(as_of="0.4.2")
+    def __eq__(self, other):
+        # return true if we are referencing the same object
+        return self is other
 
     @experimental(as_of="0.4.2")
     def __repr__(self):
         # TODO: string output that meet genbank file specification
         pass
-
 
     def _wrap_text_with_indent(self, text, initial_text, extra_indent):
         """Wrap text across lines with an initial indentation.
