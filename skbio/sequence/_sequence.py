@@ -598,7 +598,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             type_err_msg = ''
             if isinstance(features, list):
                 # test just the first
-                if isinstance(features[0], Feature):
+                if len(features) > 1 and isinstance(features[1], Feature):
                     self.features = features
                 else:
                     valid_feature_type = False
@@ -886,7 +886,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                     if self.positional_features is not None:
                         pos_feature_slices = list(_slices_from_iter(self.positional_features, index))
                         positional_features = sparse.vstack(pos_feature_slices)
-                        features = self._purge_features()
+                        features = self._purge_features(positional_features)
                     else:
                         positional_features = None
                         features = None
@@ -932,7 +932,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                 positional_features = self.positional_features[indexable]
             else:
                 raise IndexError("Type %s not supported as index" % repr(type(indexable)))
-            features = self._purge_features()
+            features = self._purge_features(positional_features)
         else:
             positional_features = None
             features = None
@@ -964,7 +964,7 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
             index = indexable
         return self.positional_metadata.iloc[index]
 
-    def _purge_features(self):
+    def _purge_features(self, positional_features):
         """
         Purges features, index_feature_types to match what remains in positional_features
         """
@@ -974,10 +974,10 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         features = [None]
         nidx = -1
         pidx = -1
-        rows, cols = self.positional_features.get_shape()
+        rows, cols = positional_features.get_shape()
         for row in range(rows):
             for col in range(cols):
-                fidx = self.positional_features[row,col]
+                fidx = positional_features[row,col]
                 if fidx > 0:
                     if fidx != pidx:
                         pidx = fidx
@@ -986,8 +986,8 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                             features.append(self.features[fidx])
                             nidx = len(features) - 1
                         else:
-                            nidx = features.index(self.features[fidx])
-                    self.positional_features[row,col] = nidx
+                            nidx = features.index(features[fidx])
+                    positional_features[row,col] = nidx
 
         return features
 
