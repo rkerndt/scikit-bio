@@ -2316,6 +2316,19 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
         yield
         self._bytes.flags.writeable = False
 
+    def get_features(self, type):
+        """
+        Parameters
+        ----------
+        type string which matches a feature type
+
+        Returns a list of all features in the sequence which match that type.
+        -------
+        """
+        if type in self.index_feature_types:
+            for feature in self.features:
+                if feature.type_ == type:
+                    yield feature
 
 def _single_index_to_slice(start_index):
     end_index = None if start_index == -1 else start_index+1
@@ -2345,3 +2358,4 @@ def _slices_from_iter(array, indexables):
                              "containing %r." % i)
 
         yield array[i]
+
