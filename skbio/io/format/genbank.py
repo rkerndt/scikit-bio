@@ -660,6 +660,8 @@ def _parse_features(lines, length):
 
 def _serialize_features(header, obj, indent=21):
     first = True
+    if obj == None:
+        return;
     for feature in obj:
         if first:
             first = False
