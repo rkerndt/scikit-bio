@@ -724,7 +724,7 @@ def _parse_single_feature(lines, length):
 
 
 def _serialize_single_feature(obj, indent=21):
-    padding = ' ' * 8
+    padding = 5
     qualifiers = []
 
     if(isinstance(obj, dict)):
@@ -748,9 +748,10 @@ def _serialize_single_feature(obj, indent=21):
             else:
                 qualifiers.append(_serialize_qualifier(k, v))
         qualifiers = [' ' * indent + i for i in qualifiers]
-        return '{header:>{indent}}{loc}\n{qualifiers}\n'.format(
-            header=obj.type_ + padding, loc=obj.location,
-            indent=indent, qualifiers='\n'.join(qualifiers))
+        return '{header:{indent}}{loc}\n{qualifiers}\n'.format(
+            header=' ' * padding + obj.type_, loc=obj.location,
+            indent=max(indent, len(obj.type_) + padding + 1),
+            qualifiers='\n'.join(qualifiers))
     else:
         return ''
 
@@ -799,6 +800,7 @@ def _parse_loc_str(loc_str, length):
     operators = ['join', 'complement', 'order']
     if 'complement' in items:
         res['rc_'] = True
+    index = []
     for i in items:
         i = i.strip()
         if i in operators or not i:
