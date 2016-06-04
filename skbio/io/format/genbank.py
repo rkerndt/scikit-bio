@@ -455,6 +455,18 @@ def _serialize_single_genbank(obj, fh):
                     fh.write(s)
             else:
                 fh.write(out)
+    #serialize features object if it exists
+    if hasattr(obj, 'features'):
+        serializer = _SERIALIZER_TABLE.get('FEATURES', _serialize_section_default)
+        out = serializer('FEATURES', obj.features)
+        # test if 'out' is a iterator.
+        # cf. Effective Python Item 17
+        if iter(out) is iter(out):
+            for s in out:
+                fh.write(s)
+        else:
+            fh.write(out)
+
     # always write RNA seq as DNA
     if isinstance(obj, RNA):
         obj = obj.reverse_transcribe()
@@ -648,6 +660,8 @@ def _parse_features(lines, length):
 
 def _serialize_features(header, obj, indent=21):
     first = True
+    if obj == None:
+        return;
     for feature in obj:
         if first:
             first = False
@@ -710,7 +724,7 @@ def _parse_single_feature(lines, length):
 
 
 def _serialize_single_feature(obj, indent=21):
-    padding = ' ' * 8
+    padding = 5
     qualifiers = []
 
     if(isinstance(obj, dict)):
@@ -734,11 +748,12 @@ def _serialize_single_feature(obj, indent=21):
             else:
                 qualifiers.append(_serialize_qualifier(k, v))
         qualifiers = [' ' * indent + i for i in qualifiers]
-        return '{header:>{indent}}{loc}\n{qualifiers}\n'.format(
-            header=obj.type_ + padding, loc=obj.location,
-            indent=indent, qualifiers='\n'.join(qualifiers))
+        return '{header:{indent}}{loc}\n{qualifiers}\n'.format(
+            header=' ' * padding + obj.type_, loc=obj.location,
+            indent=max(indent, len(obj.type_) + padding + 1),
+            qualifiers='\n'.join(qualifiers))
     else:
-        raise TypeError("No valid feature variable type is found.")
+        return ''
 
 
 
@@ -785,6 +800,7 @@ def _parse_loc_str(loc_str, length):
     operators = ['join', 'complement', 'order']
     if 'complement' in items:
         res['rc_'] = True
+    index = []
     for i in items:
         i = i.strip()
         if i in operators or not i:
