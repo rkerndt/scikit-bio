@@ -454,7 +454,7 @@ def _serialize_single_genbank(obj, fh):
             else:
                 fh.write(out)
     #serialize features object if it exists
-    if hasattr(obj, 'features'):
+    if hasattr(obj, 'features') and obj.features is not None:
         serializer = _SERIALIZER_TABLE.get('FEATURES', _serialize_section_default)
         out = serializer('FEATURES', obj.features[1:]) # position 0 is always None
         # test if 'out' is a iterator.
