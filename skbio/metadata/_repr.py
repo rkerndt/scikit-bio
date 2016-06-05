@@ -12,7 +12,7 @@ import textwrap
 
 from abc import ABCMeta, abstractmethod
 from skbio._base import ElasticLines
-
+from collections import Counter
 
 class _MetadataReprBuilder(metaclass=ABCMeta):
     """Abstract base class for building  a repr for an object containing
@@ -77,16 +77,11 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
         """
         try:
             if self._obj.features:
-                self._lines.add_lines(self._format_feature_key_value('Features', 'Location/Qualifiers', 1))
-                for feature in self._obj.features:
-                    self._lines.add_lines(self._format_feature_key_value(feature.type_, feature.location, 2))
-                    for key in sorted(feature.qualifiers):
-                        value = feature.qualifiers[key]
-                        if isinstance(value, list):
-                            for v in value:
-                                self._lines.add_lines(self._format_feature_key_value(key, v, 3))
-                        else:
-                            self._lines.add_lines(self._format_feature_key_value(key, value, 3))
+                self._lines.add_line('Features Type:Quantity')
+                # build dictionary of feature type and count
+                feature_counts = Counter(map(lambda f: f.type_, self._obj.features[1:]))
+                for type, count in sorted(feature_counts.items()):
+                    self._lines.add_lines(self._format_feature_key_value(type, count, 2))
         except AttributeError:
             pass
 
@@ -143,16 +138,21 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
         """
         key_fmt = (self._indent * indent) + str(key)
 
+        if indent == 1:
+            key_fmt += ': '
+
         if isinstance(value, str):
             value_repr = str(value)
             extra_indent = 1
         else:
             value_repr = repr(value)
-            extra_indent = 0
+            extra_indent = 1
 
         if indent == 3:
             key_fmt += '='
         elif indent == 2:
+            key_fmt += ': '
+            extra_indent = 1
             value_repr = self._indent + value_repr
 
         return self._wrap_text_with_indent(value_repr, key_fmt, extra_indent)
