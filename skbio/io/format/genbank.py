@@ -456,7 +456,7 @@ def _serialize_single_genbank(obj, fh):
     #serialize features object if it exists
     if hasattr(obj, 'features'):
         serializer = _SERIALIZER_TABLE.get('FEATURES', _serialize_section_default)
-        out = serializer('FEATURES', obj.features)
+        out = serializer('FEATURES', obj.features[1:]) # position 0 is always None
         # test if 'out' is a iterator.
         # cf. Effective Python Item 17
         if iter(out) is iter(out):
@@ -722,7 +722,7 @@ def _parse_single_feature(lines, length):
 
 
 def _serialize_single_feature(obj, indent=21):
-    padding = 5
+    padding = 7
     qualifiers = []
 
     if(isinstance(obj, Feature)):
