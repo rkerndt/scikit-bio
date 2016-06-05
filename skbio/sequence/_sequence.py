@@ -886,7 +886,8 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                     if self.positional_features is not None:
                         pos_feature_slices = list(_slices_from_iter(self.positional_features, index))
                         positional_features = sparse.vstack(pos_feature_slices)
-                        features = self._purge_features(positional_features)
+                        features = self.features
+                        #features = self._purge_features(positional_features)
                     else:
                         positional_features = None
                         features = None
@@ -932,7 +933,8 @@ class Sequence(MetadataMixin, PositionalMetadataMixin, collections.Sequence,
                 positional_features = self.positional_features[indexable]
             else:
                 raise IndexError("Type %s not supported as index" % repr(type(indexable)))
-            features = self._purge_features(positional_features)
+            features = self.features
+            #features = self._purge_features(positional_features)
         else:
             positional_features = None
             features = None

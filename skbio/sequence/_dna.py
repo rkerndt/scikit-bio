@@ -207,6 +207,9 @@ class DNA(GrammaredSequence, NucleotideMixin,
         # turn off validation because `seq` is guaranteed to be valid
         return skbio.RNA(seq, metadata=self.metadata,
                          positional_metadata=self.positional_metadata,
+                         features=self.features,
+                         index_feature_types=self.index_feature_types,
+                         positional_features=self.positional_features,
                          validate=False)
 
     @stable(as_of="0.4.0")

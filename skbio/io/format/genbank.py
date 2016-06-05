@@ -167,14 +167,13 @@ Metadata:
     'ACCESSION': '3K1V_A'
     'COMMENT': 'SEQRES.'
     'DEFINITION': 'Chain A, Structure Of A Mutant Class-I Preq1.'
-    'FEATURES': <class 'list'>
     'KEYWORDS': '.'
     'LOCUS': <class 'dict'>
     'REFERENCE': <class 'list'>
     'SOURCE': <class 'dict'>
     'VERSION': '3K1V_A  GI:260656459'
-Positional metadata:
-    0: <dtype: bool>
+Features Type:Quantity
+    source: 1
 Stats:
     length: 34
     has gaps: False
@@ -197,14 +196,13 @@ Metadata:
     'ACCESSION': '3K1V_A'
     'COMMENT': 'SEQRES.'
     'DEFINITION': 'Chain A, Structure Of A Mutant Class-I Preq1.'
-    'FEATURES': <class 'list'>
     'KEYWORDS': '.'
     'LOCUS': <class 'dict'>
     'REFERENCE': <class 'list'>
     'SOURCE': <class 'dict'>
     'VERSION': '3K1V_A  GI:260656459'
-Positional metadata:
-    0: <dtype: bool>
+Features Type:Quantity
+    source: 1
 Stats:
     length: 34
     has gaps: False
@@ -727,19 +725,7 @@ def _serialize_single_feature(obj, indent=21):
     padding = 5
     qualifiers = []
 
-    if(isinstance(obj, dict)):
-        for k in sorted(obj):
-            v = obj.qualifiers[k]
-            if isinstance(v, list):
-                for vi in v:
-                    qualifiers.append(_serialize_qualifier(k, vi))
-            else:
-                qualifiers.append(_serialize_qualifier(k, v))
-        qualifiers = [' ' * indent + i for i in qualifiers]
-        return '{header:>{indent}}{loc}\n{qualifiers}\n'.format(
-            header=obj['type_'] + padding, loc=obj['location'],
-            indent=indent, qualifiers='\n'.join(qualifiers))
-    elif(isinstance(obj, Feature)):
+    if(isinstance(obj, Feature)):
         for k in sorted(obj.qualifiers):
             v = obj.qualifiers[k]
             if isinstance(v, list):
@@ -753,7 +739,7 @@ def _serialize_single_feature(obj, indent=21):
             indent=max(indent, len(obj.type_) + padding + 1),
             qualifiers='\n'.join(qualifiers))
     else:
-        return ''
+        return repr(obj)
 
 
 

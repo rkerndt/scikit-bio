@@ -81,7 +81,7 @@ class _MetadataReprBuilder(metaclass=ABCMeta):
                 # build dictionary of feature type and count
                 feature_counts = Counter(map(lambda f: f.type_, self._obj.features[1:]))
                 for type, count in sorted(feature_counts.items()):
-                    self._lines.add_lines(self._format_feature_key_value(type, count, 2))
+                    self._lines.add_lines(self._format_feature_key_value(type, count, 1))
         except AttributeError:
             pass
 
